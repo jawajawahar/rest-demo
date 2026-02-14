@@ -1,0 +1,53 @@
+name: Docker Build -> Push -> Deploy
+
+on:
+  push:
+    branches: [ "main" ]
+
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        run: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin' # See 'Supported distributions' for available options
+          java-version: '21'
+ 
+      - name: Build Jar
+        run: ./mvnw clean package -DskipTest
+
+      - name: Login to Docker Hub
+        run: docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --passord-stdin
+
+      - name: Build Docker Image
+        run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/rest-demo:latest
+
+      - name: Push Image to Docker Hub
+        run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/rest-demo:latest
+
+      - name: SSH and Deploy to EC2
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+           docker stop RestDemo
+           docker rm RestDemo
+           docker pull ${{ secrets.DOCKERHUB_USERNAME }}/rest-demo:latest
+           docker run -d --name RestDemo -p 8080:8080 ${{ secrets.DOCKERHUB_USERNAME }}/rest-demo:latest
+        
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build the Docker image
+      run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
