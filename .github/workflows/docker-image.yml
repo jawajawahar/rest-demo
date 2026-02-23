@@ -20,13 +20,15 @@ jobs:
           java-version: '21'
  
       - name: Build Jar
-        run: ./mvnw clean package -DskipTest
+        run: |
+          chmod +X .mvnw
+          ./mvnw clean package -DskipTest
 
       - name: Login to Docker Hub
         run: docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --passord-stdin
 
       - name: Build Docker Image
-        run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/rest-demo:latest
+        run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/rest-demo:latest .
 
       - name: Push Image to Docker Hub
         run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/rest-demo:latest
