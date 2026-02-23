@@ -4,6 +4,7 @@ on:
   push:
     branches: [ "main" ]
 
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -15,7 +16,7 @@ jobs:
       - name: Setup Java
         uses: actions/setup-java@v5
         with:
-          distribution: 'temurin'
+          distribution: 'temurin' # See 'Supported distributions' for available options
           java-version: '21'
 
       - name: Build Jar
@@ -26,8 +27,9 @@ jobs:
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+
 
       - name: Build Docker Image
         run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/rest-demo:latest .
@@ -42,7 +44,16 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            docker stop RestDemo || true
-            docker rm RestDemo || true
-            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/rest-demo:latest
-            docker run -d --name RestDemo -p 8080:8080 ${{ secrets.DOCKERHUB_USERNAME }}/rest-demo:latest
+           docker stop RestDemo
+           docker rm RestDemo
+           docker pull ${{ secrets.DOCKERHUB_USERNAME }}/rest-demo:latest
+           docker run -d --name RestDemo -p 8080:8080 ${{ secrets.DOCKERHUB_USERNAME }}/rest-demo:latest
+
+#  build:
+#
+#    runs-on: ubuntu-latest
+#
+#    steps:
+#    - uses: actions/checkout@v4
+#    - name: Build the Docker image
+#      run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
